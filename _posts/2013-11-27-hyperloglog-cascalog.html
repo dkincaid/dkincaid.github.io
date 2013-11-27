@@ -1,0 +1,225 @@
+---
+layout: post
+title: Using HyperLogLog in Cascalog
+tagline: Real world performance benchmarks
+excerpt: Several examples of using the HyperLogLog cardinality estimator with Cascalog exist on the web. However, none of them seem to really address real world performance. 
+categories: hadoop cascalog
+---
+
+<p>
+Recently I have been working on using the <a href="http://blog.aggregateknowledge.com/2012/10/25/sketch-of-the-day-hyperloglog-cornerstone-of-a-big-data-infrastructure/">HyperLogLog</a> cardinality estimation algorithm with
+<a href="http://cascalog.org">Cascalog</a>. As I perused the web for examples of how other people were doing this I was able to find a
+couple of approaches to doing it.
+</p>
+
+<p>
+This post is an off-shoot of <a href="http://screen6.github.io/blog/2013/11/13/hyperloglog-with-cascalog.html">an excellent article</a> on this along with some good discussion about
+performance. Before you continue reading this I would encourage you to go over there and at least
+skim the article. They did a really nice job of explaining things, so I won't repeat most of it
+here.
+</p>
+
+<p>
+In the article the authors did a very nice comparison of two different ways of using the HyperLogLog
+object from the library. Basically you can either use one object and "offer" values to it or create
+a new object with your value then merge it with another object that has values already in it. Not
+totally unexpectedly the performance is much better if you use one object and add values to it.
+</p>
+
+<p>
+However, this doesn't take into account some of the optimization strategies that one needs to use
+when building MapReduce jobs. One of the things that I have learned while working with Cascalog and
+MapReduce over the last year or so is that it is very important to do as much work in the map tasks
+as possible. In other words, you really want to minimize the amount of data that needs to pass from
+map task to reduce task.
+</p>
+
+<p>
+So what does this mean in the world of Cascalog? I have interpreted this to mean preferring
+<code>defparallelagg</code> to the other custom aggregators when doing
+aggregation. The problem is that to do some of the aggregation map-side we don't get a chance to
+hold on to any state like we do with the <code>defaggregateop</code>. So our <code>defparallelagg</code> is forced to
+create a new HLL object for each one of the tuple values and then merge that object into another.
+</p>
+
+<p>
+So our parallel aggregator will look like this:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #b294bb;">c/defparallelagg</span> <span style="color: #81a2be;">agg-hyperloglog</span>
+  <span style="color: #b5bd68;">:init-var</span> #'hll-construct
+  <span style="color: #b5bd68;">:combine-var</span> #'hll-merge)
+</pre>
+</div>
+
+<p>
+The way this works is that the function we've defined as <code>:init-var</code> will get called once for each
+tuple. In this case the <code>hll-construct</code> function is creating a HyperLogLog object and offering the
+tuple value to it then returning the HLL object. Then the function defined as the <code>:combine-var</code>
+will get called with the results of the calls to the <code>:init-var</code> functions as well as other combines
+until there is only one value left. In this case, the <code>hll-merge</code> function gets two HyperLogLog
+objects (either returned from <code>hll-construct</code> or a previous call to <code>hll-merge</code>) and simply merges
+them.
+</p>
+
+<p>
+So what's going to happen in our query is that each <code>?uuid</code> value will be put into a HLL object and
+then successively merged into other HLL objects with one or more <code>?uuid</code> values in them. This will
+happen first on each map task then those single HLL objects will be sent from the map tasks to the
+reduce tasks where they will all be combined (merged). And remember that this combining of HLL's is
+happening based on the aggregation grouping in the query (in this case we're grouping by city, year
+and day).
+</p>
+
+<p>
+Here are <code>hll-construct</code> and <code>hll-merge</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #b294bb;">defn</span> <span style="color: #81a2be;">hll-construct</span>
+  <span style="color: #b5bd68;">"Construct a HyperLogLog and offer the given init-value. 12 bits gives a little less than 2% standard error."</span>
+  [init-value]
+  (<span style="color: #b294bb;">doto</span> (<span style="color: #b0c4de;">HyperLogLog.</span> 12) (<span style="color: #b0c4de;">.offer</span> init-value)))
+
+(<span style="color: #b294bb;">defn</span> <span style="color: #81a2be;">hll-merge</span>
+  <span style="color: #b5bd68;">"Merge two or more HyperLogLog's together."</span>
+  [<span style="color: #b0c4de;">^HyperLogLog</span> first-hlog &amp; hlogs]
+  (<span style="color: #b0c4de;">.merge</span> <span style="color: #b0c4de;">^HyperLogLog</span> first-hlog (<span style="color: #b0c4de;">into-array</span> <span style="color: #b0c4de;">HyperLogLog</span> hlogs)))
+</pre>
+</div>
+
+<p>
+You can find all of the code that I used in my <a href="http://github.com/dkincaid/cascalog-hll-benchmark">Github repository</a>. Most of the code is directly from
+the <a href="http://screen6.github.io/blog/2013/11/13/hyperloglog-with-cascalog.html">original blog post at Screen6</a>. The code for the parallel implementation was adapted from a <a href="https://groups.google.com/forum/#!msg/cascalog-user/l3H456kmhhQ/-7gfgVZ2xaUJ">post</a>
+on the<a href="https://groups.google.com/forum/#!forum/cascalog-user"> Cascalog Google group</a> by Jeroen van Dijk
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">Setup</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+I used <code>write-ov-chipkaart-accesslog-file</code> to create files of random data each with 1 million
+lines of simulated log entries. Each file is about 60MB. I then uploaded the files on S3 for the MR
+run. I did two runs. The first with 10 of these files and the second with 30 of them.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-clojure">(<span style="color: #b294bb;">for</span> [i (<span style="color: #b0c4de;">range</span> 1 11)] (write-ov-chipkaart-accesslog-file (<span style="color: #b0c4de;">str</span> <span style="color: #b5bd68;">"/tmp/chipkaart-"</span> i) 1000000))
+</pre>
+</div>
+
+<p>
+The Hadoop cluster I used was a 10 node Amazon EMR cluster using Large
+EC2 nodes with Amazon's flavor of Hadoop. The output of the Cascalog job was sunk to S3. Each
+Cascalog query resulted in a single MapReduce job using 60 map tasks and 17 reduce tasks.
+</p>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Results</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+The results of the job run were measured using the stats from the JobTracker UI after the jobs had
+completed.
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="right" />
+
+<col  class="left" />
+
+<col  class="right" />
+
+<col  class="right" />
+
+<col  class="right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="right">Run time</th>
+<th scope="col" class="left">Map - tuples read</th>
+<th scope="col" class="right">Map - tuples written</th>
+<th scope="col" class="right">Reduce - tuples read</th>
+<th scope="col" class="right">Reduce - tuples written</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">Aggregate</td>
+<td class="right">3:33</td>
+<td class="left">10,000,000</td>
+<td class="right">10,000,000</td>
+<td class="right">10,000,000</td>
+<td class="right">14</td>
+</tr>
+
+<tr>
+<td class="left">Parallel</td>
+<td class="right">2:55</td>
+<td class="left">10,000,000</td>
+<td class="right">840</td>
+<td class="right">840</td>
+<td class="right">14</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+<td class="right">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Aggregate</td>
+<td class="right">6:19</td>
+<td class="left">30,000,000</td>
+<td class="right">30,000,000</td>
+<td class="right">30,000,000</td>
+<td class="right">14</td>
+</tr>
+
+<tr>
+<td class="left">Parallel</td>
+<td class="right">5:21</td>
+<td class="left">30,000,000</td>
+<td class="right">840</td>
+<td class="right">840</td>
+<td class="right">14</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>
+As you can see the performance on this data is about 18% better for the <code>defparallelagg</code> implementation. I
+believe that the performance gain in using aggregating into a single HLL object is offset by the
+time needed to shuffle/sort and send the data to the reduce tasks. As the data gets bigger and
+bigger this difference will become even more pronounced.
+</p>
+
+<p>
+So even though the merge implementation is 5x slower than the offer implementation, when run as a
+Cascalog job on a cluster with a decent amount of data, the merge implementation is about 15-20%
+faster than the offer.
+</p>
+
+<p>
+I think the key thing to take away from this is that when measuring performance of Cascalog jobs (and
+really any MapReduce job) we have to be sure to test on a real cluster using a significant enough
+amount of data.
+</p>
+</div>
+</div>
