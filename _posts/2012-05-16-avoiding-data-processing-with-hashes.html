@@ -1,0 +1,40 @@
+---
+layout: post
+title: Avoiding data processing with hashes
+categories:
+- Distributed Systems
+- NoSQL
+tags: []
+status: publish
+type: post
+published: true
+meta:
+  switch_like_status: '1'
+  _wpas_done_linkedin: '1'
+  publicize_results: a:1:{s:7:"twitter";a:1:{i:11342442;a:2:{s:7:"user_id";s:11:"davekincaid";s:7:"post_id";s:18:"202907255803363329";}}}
+  _wpas_done_twitter: '1'
+  _elasticsearch_indexed_on: '2012-05-16 23:43:48'
+---
+Recently for a project I am working on we had to find a way to decide if a data record had changed since the last time we saved it to the database. For this project we are receiving data from a number of customer databases periodically (every 6 hours) and need to do some ETL stuff on it before storing it in an Oracle database. We all know that reading a record from Oracle can be slow (relatively speaking), so we wanted something much faster.
+
+Since there isn't a reasonable way to determine from the databases themselves which records have changed we are forced to dump entire tables for processing. We wanted to do the minimal amount of processing necessary if the records haven't changed since we wrote them to the database to save processing time. Typically for most of these tables only a very small number of rows have actually changed.
+
+The solution we came up with was to calculate a hash value from the concatenated column values for each record when we write a record to Oracle. These hash values are then stored in a <a href="http://redis.io" target="_blank">Redis</a> hash keyed by the primary key of the table. Then when we receive a data table dump from the remote database we calculate the same hash on the incoming record and compare it to the hash value we have stored in Redis. If they match we know the record hasn't changed and we don't need to process it.
+
+The whole thing is very fast and saves a great deal of unnecessary processing downstream. So far Redis has proven up to the task of quickly storing and retrieving millions of key/hash values.
+
+Here's what it looks like:
+
+Let's say we have a customer record in our database that has id, name, address, city and state like this:
+
+<code>id: 1000, name: Joe Smith, address: 123 Main St., city: New York, state: NY</code>
+
+the first time we see this record and check Redis for the existence of the key 1000 we will get nil returned, so we store the record in the database, calculate the hash of the value <code>"1000:Joe Smith:123 Main St.:New York:NY"</code> to get something like <code>"0a243fec5ab"</code> (we are using 128-bit hash values in production) and then store that hash value in Redis using
+
+<code>set "1000" "0a243fec5ab"</code>
+
+the next time we get this record we calculate the same hash if it is unchanged and know we don't need to process it again. If the hash value is different then we know that the record has changed and we need to send it through the rest of the processing chain.
+
+We are currently using <a title="Storm" href="http://github.com/nathanmarz/storm" target="_blank">Storm</a> to process millions of records at a time and use this hash check very early on in the pipeline to save us from needing more resources later in the pipeline to process unchanged records. We chose to use the <a href="http://code.google.com/p/smhasher/" target="_blank">Murmur-128</a> hash that is included in the <a href="https://code.google.com/p/guava-libraries/" target="_blank">Google Guava</a> library for its speed.
+
+Have you ever had a similar requirement? How did you solve it?

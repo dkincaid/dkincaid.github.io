@@ -1,0 +1,52 @@
+---
+layout: post
+title: Strangeloop 2011 Day 2
+categories:
+- Clojure
+- Distributed Systems
+- Hadoop
+- NoSQL
+- R
+tags: []
+status: publish
+type: post
+published: true
+meta:
+  _wpas_mess: ! 'Strangeloop 2011 Day 2: http://bit.ly/qyjoPN #strangeloop'
+  _wpas_done_twitter: '1'
+  _wpas_done_linkedin: '1'
+  _elasticsearch_indexed_on: '2011-09-21 23:10:53'
+---
+I'm headed back home from Strangeloop 2011 this morning. Once again I booked an early flight so was up at 4:45 to get to the airport (when will I learn?) The conference was a smashing success as far as I am concerned. It was extremely well run and the talks were full of solid content. I didn't see nearly as much marketing during the conference as I've seen at other conferences which was really nice. Most of the marketing I did see was companies trying to recruit new developers. There seems to be a lot of demand out there right now for innovative thinkers and people who are eager to stay on the cutting edge. Makes me think...
+
+I started the day with a talk by Jake Luciani called "Hadoop and Cassandra". Basically this was an introduction to a tool called Brisk which helps take some of the pain out of bringing up Hadoop clusters and running MapReduce jobs. In essence it embeds the components of Hadoop inside Cassandra and makes it easy to deploy and easy to scale with no downtime. It replaces HDFS with CassandraFS which in an of itself looks really interesting. It's turning the Cassandra DB into a distributed file system. Very interesting how they are doing that. Sounds like a topic for another post once I've had some time to read some more about it. Jake showed a demo that looked quite impressive as he brought up a four cluster Hadoop on Cassandra node and ran a portfolio manager application splitting it into an OLTP side and an OLAP side. <a href="https://github.com/riptano/brisk">Brisk</a> definitely deserves further investigation.
+
+<!--more-->
+
+The second talk of the day I went to was "Distributed Data Analysis with Hadoop and R" given by Jonathan Seidman and Ramesh Venkataramaiah from Orbitz. I've seen some things that Orbitz has been doing before, so I was excited to see what they have been doing with Hadoop and R. After covering what R and Hadoop are Ramesh described some of the problems they were trying to solve using analytics. One point made that resonated with me was the fact that using sampling to reduce the amount of data that you have to use in your analysis is very bad for long tail distributions. Definitely something to keep in mind. One other point made that I have heard before from other talk is to always keep the source data that you use in your analyses. This is very good advice for both future analyses as well as letting others validate your analyses.
+
+Jonathan came on about halfway through to give more detailed information on hooking up R and Hadoop. I have to say I was a little disappointed to hear that the work in this area is incomplete to say the least. He talked about using Hadoop streaming, Hadoop interactive, RHIPE and rmr (from Revolution Analytics). Out of these he spent the most time talking about RHIPE since that is what they are using. He had very good things to say about rmr as well but they hadn't done much with it yet since it was so new. Jonathon also mentioned JD Long's segue package which I have seen JD give a demo of at an R users meeting before. It is something target toward applications which are embarassingly parallel (big cpu, not big data), so wouldn't be applicable in general. I came out of the talk interested in checking out both RHIPE and rmr and will keep segue where it fits. You can find the <a href="http://www.github.com/jseidman/hadoop-R">code</a> for the talk and the <a href="http://www.slideshare.net/jseidman/distributed-data-analysis-with-r-strangeloop-2011">slides</a> online. I have to give credit to Orbitz for sharing this information with the community. They are doing some really interesting stuff.
+
+Next I went to Benjamin Young's talk called "Why CouchDB?" I have been intrigued by CouchDB on and off for a while now, so wanted to hear what was new and what set it apart from other document databases like MongoDB. One thing that turns me off from CouchDB is the Map/Reduce style views that you have to create to do queries. I just don't see where that is flexible enough, but maybe that's the idea. Benjamin made a strong pitch for the importance of replication of data. Especially in the world that is becoming more and more mobile. It's an interesting idea to keep the data local so that you can access it very easily and quickly. I think that was the essence of Benjamin's talk. I don't think it swayed my toward CouchDB though. Mainly because I don't think I really have an application for it that is in its wheelhouse. I did learn a lot more, so will know when it fits.
+
+After lunch was a languages panel. Alex got together some of the leading minds in the field of computer language development. The panelists were 
+
+<ul><li>Gerald Sussman who we all know as one of the inventors of Scheme and a long time leading computer science professor at MIT.</li>
+<li>Jeremy Ashkenas from the NY Times who has worked on CoffeeScript</li>
+<li>Rich Hickey, creator of Clojure</li>
+<li>Allen Wirfs-Brock, who has done quite a bit of work with ECMAScript standards</li>
+<li>Joe Pamer from Microsoft who works on F#</li>
+<li>Anderei Alexandrescu who works on the D language</li>
+</ul>
+
+I'll just highlight a couple of the questions that I found interesting and insightful. The first question was what is the worst idea inflicted on programming languages. Dr. Sussman answered that it was complex syntax and came across with the most quoted line from the panel, "syntactic sugar leads to cancer of the semicolon". Hickey, as I would have guessed, thought that mutability by default was the worst idea thrust upon developers. Rich has been preaching this over and over again (and I happen to agree with him). Another answer that really struck a chord with me was Joe Pamer's answer that the focus on code instead of data was the worst idea. The more I've worked with Clojure the more I agree with that. Clojure really exposes you to thinking more about your data and less about the code.
+
+The other question I found very interesting was asking each of the panelists which language they wish they had invented (other than their own). I thought this was interesting not because of the question itself, rather the answers. Everyone on the panel agreed that wished they had invented Lisp. After being exposed to Lisp through Clojure recently I do have to agree that it seems like a very powerful language that has stood the test of time. The panel was really good, but was mistakenly cut short by about 20 minutes. I would have liked to hear more. I hope they do this again next year.
+
+Following the language panel were the final two keynotes of the conference. The first by Allen Wirfs-Brock was called "Post-PC Computing is not a Vision". I found the ideas in the first half of the talk about the eras of computing interesting and thought provoking. Allen outlined what he believes are three eras of computing. The first started around 1950 and saw computers enhancing and empowering business enterprise activites. He called this era the Corporate Computing Era. The second era started in the mid-70's and enhanced and empowered individual's tasks. This he dubbed the Personal Computing Era. Allen thinks we're on the cusp of a new era which he is calling the Ambient Computing Era. This era focuses on devices, not computers and includes ubiquitous access to information.
+
+The second half of the talk I think he went off the tracks a bit and tried to sell us on the idea that the new platform for this new era was going to be the web application stack dropped on top of the OS kernel and drivers. For the second half of the talk he was trying to sell us on the idea that Javascript would be the canonical computing language of this new era. I don't think many were buying.
+
+Finally to end the conference was one of the highlights. Rich Hickey's keynote entitled "Simple Made Easy". I've heard both he and Stuart Holloway expounding on similar ideas of simplicity. I think with this talk Rich has the ideas well thought out and explained them very clearly. The fundamental thing that I came away from this awesome talk with (besides learning a new word, complect) was thinking in terms of the difference between simple and easy. In Rich's words, "simple is about a lack of interleaving, not cardinality". The main point about easy is that it is relative. Relative to our sensibilities, understanding, skill set and capabilities. He gave some pretty concrete ideas for recognizing complexity and ways to think instead about simpler ways of building things. There was so much great stuff in this talk and there isn't room here to go into ore detail. Suffice it to say that Rich had a room full of 900 or so developers, most of whom will take these ideas and run with them.
+
+If you didn't make it to the conference this year, keep your eye on <a href="http://www.infoq.com">InfoQ</a> for the videos of the talks. Let me just wrap this up with a final comment about the conference. As I saw someone else tweet yesterday, this was the best conference that I have ever been to bar none. The rich content, great speakers and a chance to rub elbows with a lot of really smart people was amazing. Alex and team did a fabulous job putting this on. It seemed to go off without a hitch. I can't wait until next year! I'm off to explore all these new ideas and tools.

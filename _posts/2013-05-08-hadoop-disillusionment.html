@@ -1,0 +1,40 @@
+---
+layout: post
+title: Hadoop Disillusionment
+categories:
+- Distributed Systems
+- Hadoop
+tags: []
+status: publish
+type: post
+published: true
+meta:
+  _publicize_pending: '1'
+  _wpas_done_25927: '1'
+  publicize_reach: a:2:{s:7:"twitter";a:1:{i:25928;i:179;}s:2:"wp";a:1:{i:0;i:2;}}
+  switch_like_status: '1'
+  publicize_twitter_user: davekincaid
+  _wpas_done_25928: '1'
+  _publicize_done_external: a:1:{s:7:"twitter";a:1:{i:11342442;b:1;}}
+  _elasticsearch_indexed_on: '2013-05-08 13:32:28'
+---
+It's been quite a while since I last blogged. I'd like to say I'll get more consistent, but things are so busy it's hard to find the time. I felt the need to write something today both to "get it off my chest" as they say as well as to maybe help some others that might be starting into Hadoop avoid some misunderstandings.
+
+The title of this post refers to my own disillusionment, not to the cliché "trough of disillusionment" of Gartner, et. al. I've been on the fringes of the Hadoop world for several years. I attended the first O'Reilly Strata Conference back in 2011 and I've read and read and read blog posts, watched many talks and tutorials, etc. I even have been working a bit with a production job that runs weekly on Amazon's EMR service. But I've never really had to do a full scale project that relied on Hadoop as its foundation. So I've developed some misunderstandings about how things work and having those bubbles popped as I launch a Hadoop project.
+
+Recently I pitched an idea for a project that I've been designing in my head for a couple years and got it approved and funded. So I finally had my big data project that I could sink my teeth into and do a full fledged Hadoop implementation. Up until this point EMR and Cascalog/Cascading had insulated me from the plumbing and details of Hadoop itself. I'm working with a really sharp team of four. We're all Hadoop newbies, so we're all climbing that learning curve together.
+
+The old saying "be careful what you wish for" has hit me square in the face. I tweeted out some comments over the last week or so that were probably pretty unfair to MapR in particular. I've come to see that the shortcomings I was complaining about are shortcomings in the Hadoop platform itself. It's not something that MapR has done. I've come to see that they have added a number of simplifications and created sane defaults where Hadoop itself has missed the mark. In fact, MapR has reached out to us and is actively helping us get things working.
+
+So, since 140 characters at a time isn't enough to get my point out and has caused more misunderstanding than it's helped I decided to spell things out in a longer form and maybe even add my voice to others. It's going to take a lot of us to get the Hadoop ship turned.
+
+Over the next few blog posts I intend to take you on the journey as I go from Hadoop neophyte to disillusioned newbie. Along the way I welcome corrections where I may be wrong or off the mark. Watch for the first post within the next day on my top four current complaints:
+<ol>
+	<li>Out of control configuration options (aka XML sucks)</li>
+	<li>Inability to do development in Windows environment (unfortunately every isn't on Linux or Mac yet)</li>
+	<li>Reliance on shell scripts for everything (we're writing Java apps, not Bash scripts)</li>
+	<li>Out of date and incomplete documentation (what's out there is all the same and misses some crucial things)</li>
+	<li>A really, really nasty looking code base (100+ line methods, shell out to OS, oh my God!)</li>
+</ol>
+
+There, that should be provocative enough to get you to come back... Some other things related to this project that I may or may not blog about are why I think AWS EMR is not a serious platform for more than a one-off job here and there and our experiences implementing ideas from Nathan Marz' incomplete book "Big Data".

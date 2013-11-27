@@ -1,0 +1,147 @@
+---
+layout: post
+title: Getting data from the Infochimps Geo API in R
+categories:
+- Infochimps
+- R
+tags: []
+status: publish
+type: post
+published: true
+meta:
+  _wpas_skip_twitter: '1'
+  _wpas_skip_linkedin: '1'
+  _elasticsearch_indexed_on: '2011-09-10 16:49:33'
+---
+I am very intrigued by the <a href="http://www.infochimps.com/apis/geo" title="Infochimps Geo API">Infochimps Geo API</a><a href="http://www.infochimps.com/datasets/american-community-survey-topline" title="American Community Survey Topline API"></a>, so wanted to play around with it a little bit and pull the data into R. I'll start by getting data from the American Community Survey Topline API for a 10km area around where I live.
+
+First some setup code here. It imports a couple libraries that we'll need (<a href="http://cran.r-project.org/web/packages/RJSONIO/index.html" title="RJSONIO">RJSONIO</a> and <a href="http://cran.r-project.org/web/packages/ggplot2/index.html" title="ggplot2">ggplot2</a>) then sets up some variables that we'll use later to construct the REST call into Infochimps Geo.
+
+[sourcecode language="r" light="true"]
+library(RJSONIO)
+library(ggplot2)
+
+api.uri &lt;- &quot;http://api.infochimps.com/&quot;
+acs.topline &lt;- &quot;social/demographics/us_census/topline/search?&quot;
+api.key &lt;- &quot;apikey=xxxxxxxxxx&quot;
+
+radius &lt;- 10000  # in meters
+lat &lt;- 44.768202
+long &lt;- -91.491603
+
+columns &lt;- c(&quot;geography_name&quot;,&quot;median_household_income&quot;,
+&quot;median_housing_value&quot;, &quot;avg_household_size&quot;) 
+[/sourcecode]
+
+<em>Note: if you want to use this code you'll need to remove the x's in the api.key and replace it with your Infochimps API key.</em>
+
+<!--more-->
+
+I am going to pass a latitude, longitude and radius into the API and it will give me back data for just that geographic area. You can specify the geography in a number of ways (see <a href="http://www.infochimps.com/datasets/american-community-survey-topline#api-docs_tab">API docs</a> for more info)
+
+Next we have to construct the URI to call the API, retrieve the data (which comes in as JSON) and convert the JSON object into an R object using RJSONIO.
+
+[sourcecode language="r" light="true"]
+uri &lt;- paste(api.uri, acs.topline, api.key, &quot;&amp;g.radius=&quot;, radius, &quot;&amp;g.latitude=&quot;, lat, &quot;&amp;g.longitude=&quot;, long, sep=&quot;&quot;)
+
+raw.data &lt;- readLines(uri, warn=&quot;F&quot;)
+results &lt;- fromJSON(raw.data)
+[/sourcecode]
+
+Next, we need to do some manipulation on the retrieved data to get it into a form that's easier to deal with. I like using data frames a lot, so I'll turn it into a data frame by
+
+[sourcecode language="r" light="true"]
+ml &lt;- lapply(results$results, function(x) x[columns])
+mm &lt;- matrix(unlist(ml), ncol=length(columns), byrow=TRUE)
+md &lt;- data.frame(mm)
+colnames(md) &lt;- columns
+[/sourcecode]
+
+You will now have a data frame in <code><b>md</b></code> that looks like
+[sourcecode language="r" light="true"]
+&gt; head(md)
+           geography_name median_household_income median_housing_value
+1 Altoona School District                   48699               151800
+2       Census Tract 5.01                   54498               132100
+3       Census Tract 5.02                   60018               139300
+4       Census Tract 8.02                   66432               186700
+5       Census Tract 8.01                   65833               149900
+6          Census Tract 7                   33365               117500
+&gt; 
+[/sourcecode]
+
+Unfortunately, the columns for median_household_income and median_housing_value are factors instead of numbers at this point. I don't know an automated way to change them to numeric, so you'll have to use
+[sourcecode language="r" light="true"]
+md$median_household_income = as.numeric(as.character(md$median_household_income))
+md$median_housing_value = as.numeric(as.character(md$median_housing_value))
+[/sourcecode]
+
+by hand to turn them into numbers. You could put that into your script, but it would need to change each time you wanted to get different columns from the data set. If you have an idea of how to make it automatically turn what should be a numeric column from a factor into a numeric I'd be grateful.
+
+Once you have that done you can now do your favorite analysis on the data like plotting a density graph, creating a linear model, etc.
+[sourcecode language="r" light="true"]
+qplot(median_household_income, data=md, geom=&quot;density&quot;)
+model &lt;- lm(median_housing_value ~ median_household_income, data=md)
+[/sourcecode]
+
+Have fun and play around with it. There are quite a few fields in the ACS topline data that you can explore. Here are the fields in the topline data:
+
+<pre>
+"percent_black"                    "percent_0_to_9_yo"                
+"percent_pacific"                  "percent_income_50_to_75k"         
+"percent_income_100_to_200k"       "percent_asian"                    
+"md5id"                            "avg_household_size"               
+"geo_geometry_type"                "percent_house_value_100_to_200k"  
+"percent_race_hispanic"            "intersects"                       
+"percent_carpool"                  "percent_housing_owned"            
+"_type"                            "percent_income_25_to_50k"         
+"percent_income_75_to_100k"        "percent_18_to_24_yo"              
+"geography_name"                   "census_logrecno"                  
+"percent_drive_alone"              "percent_hs_graduate"              
+"percent_public_trans"             "percent_house_value_500_to_1000k" 
+"percent_house_value_lt_50k"       "percent_house_value_gtr_1000k"    
+"percent_housing_rented"           "fips_id"                          
+"percent_10_to_17_yo"              "percent_house_value_50_to_100k"   
+"percent_income_lt_25k"            "total_pop"                        
+"percent_race_nonhispanic"         "percent_work_at_home"             
+"percent_female"                   "percent_65_over_yo"               
+"percent_white"                    "median_household_income"          
+"percent_mixed_race"               "percent_native"                   
+"percent_ba_or_above"              "percent_less_hs"                  
+"percent_50_to_64_yo"              "inside"                           
+"percent_35_to_49_yo"              "percent_25_to_34_yo"              
+"median_housing_value"             "percent_income_gtr_200k"          
+"percent_some_college"             "percent_other_trans"              
+"percent_male"                     "percent_house_value_200_to_500k"  
+"coordinates" 
+</pre>
+
+I've created a Gist with all the code at <a href="https://gist.github.com/1208431">https://gist.github.com/1208431</a>.
+
+UPDATE:
+Thanks to Patrick Hausmann for creating a function that will all me to turn the entire results received from the API into a data frame without the ugly "columns" variable that I was using. Here is the new function he provided. I have updated the <a href="https://gist.github.com/1208431">Gist</a> referenced above with a new version of the code.
+
+[sourcecode language="r" light="TRUE"]
+## Special thanks to Patrick Hausmann for the GetData function
+GetData &lt;- function(x) {
+    L &lt;- vector(mode=&quot;list&quot;, length = x$total)
+
+    a1 &lt;- sapply(x$results, function(z) sapply(z, length) )
+    field.names &lt;- names( which(apply(a1, 1, function(z) all(z == 1) )) )
+    a2 &lt;- lapply(x$results, function(z) z[names(z) %in% field.names] )
+
+    for (i in seq_along(a2)  ) {
+       x1 &lt;- a2[[i]]
+       x2 &lt;- data.frame(x1)
+       L[[i]] &lt;- x2
+    }
+
+    x4 &lt;- do.call(rbind, L)
+    return(x4)
+}
+
+md &lt;- GetData(results)
+str(md)
+[/sourcecode]
+
+

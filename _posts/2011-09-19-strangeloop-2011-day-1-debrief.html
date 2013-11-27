@@ -1,0 +1,55 @@
+---
+layout: post
+title: Strangeloop 2011 - Day 1 Debrief
+categories:
+- Clojure
+- Distributed Systems
+tags: []
+status: publish
+type: post
+published: true
+meta:
+  _wpas_done_linkedin: '1'
+  _wpas_done_twitter: '1'
+  _elasticsearch_indexed_on: '2011-09-20 01:24:03'
+---
+I'm at Strangeloop 2011 in St. Louis. The workshops were yesterday, so I'm calling that day 0. I don't really have much to say about the workshops other than I should have chosen different ones. I chose the two Clojure workshops to try to learn more about that language. I've been working with Clojure on and off for the last 6 months, but don't feel I've really grasped the fundamentals of the language or how to think in it. While I did get a few new things from Stuart Sierra's part 1 (Introduction to Clojure), I probably would have gotten more out of a different workshop. Stuart did a fantastic job presenting and it was an intro workshop, so it is completely my fault.
+
+The second workshop was Aaron Bedra's "Building Analytics with Clojure". This wasn't really about analytics at all unless your idea of analytics is making scatterplots and bar charts from a data set. I was expecting to learn much more about Incanter and how it can be used in similar ways to R. I must have misunderstood the topic of the workshop. I should have gone to the Cascalog workshop.
+
+Today was much, much better. I came up to the room after lunch for a bit and was thinking that I had already gotten my money's worth out of the first half day. I went to some amazing talks.
+
+I haven't been to many developer/tech conferences, so I don't really have much to compare this to. I was at O'Reilly's Strataconf in February and was a bit disappointed in the amount of actual content contained in most of the talks. The keynotes there were 15 minutes and most were sales pitches for the various sponsors. The talks here are nothing but great content. The team did a fantastic job lining up a great set of talks and I'm learning a ton.
+
+<!--more-->
+
+The morning started off with <a href="http://en.wikipedia.org/wiki/Erik_Meijer_(computer_scientist)">Erik Meijer's</a> keynote "Category Theory, Monads and Duality in (Big) Data". Eventhough there was nothing in the talk about monads it was still a great keynote (and I noted that it was a full 50 minutes long!) I can't do justice to Eric's content other than to say that he did a really good job of showing how relational databases and the newer "NoSQL" databases are really duals of each other and proceeded to explain what that means in terms of some light category theory. He wants us to start calling the coSQL databases instead of NoSQL because it's not as negative. If his idea of them being duals in the category theory sense that name would be more accurate too.
+
+I came away with a better picture of where these technologies fit (and don't fit). His idea about a three dimensional big data design space was eye opening and cleared up a lot in my head. I may blog about that further. Can't do it justice in this post.
+
+The next talk I went to was <a href="http://www.nealford.com/">Neal Ford's</a> "Functional Thinking" (<a href="http://nealford.com/downloads/conferences/Functional_Thinking(Neal_Ford).pdf">slides</a>). This talk did a lot for helping me see how to think about programming in Clojure. Neal is a very good presenter with engaging slides that really complemented his presentation. The bottom line that I got out of it is to think in a functional way there are five key things to remember:
+
+<ul>
+	<li>Immutability over state transition</li>
+	<li>Results over steps</li>
+	<li>Composition over structure</li>
+	<li>Declarative over imperative</li>
+	<li>Paradigm over tool</li>
+</ul>
+
+After Neal's talk was <a href="http://nathanmarz.com/">Nathan Marz'</a> talk on "Storm: Twitter's scalable realtime computation system". Halfway through the talk we watched Nathan actually open source this whole system. The system he has created looks pretty amazing. I can see a place for it in our own data processing pipeline. I won't go into too many details since you can see how it works for yourself at <a href="http://github.com/nathanmarz">Nathan's Github</a>. He has spent the last month writing documentation instead of adding new features. I can say as a probable user of this new system that is much appreciated. I'll be spending a good deal of time learning this new system and seeing how it may apply to some things that we are doing.
+
+After lunch I got in a little over my head I think. The first talk I went to was Susan Potter's "Dynamo is not just for datastores". By chance I had read the <a href="http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf">Amazon Dynamo paper</a> on the plane on the way down here, so understood what Dynamo was before the talk. Unfortunately, I'm not even really sure what the talk was about. I think it was focused on riak_core and how to use that in distributed systems. I'm not at all familiar with Riak and am even more confused now. It seems like you have to write your code in Erlang to use it, but I'm not really sure exactly what riak_core is. Nonetheless I did pick up a few things about distributed systems that will be good pointers.
+
+Next came Nate Young's "Parser Combinators" talk. I didn't follow most of this. He seemed to be assuming a level of knowledge about what parser combinators are that I don't have. The whole talk went way over my head. I did take good notes, so maybe with a little background it will make sense.
+
+The talk after that one was Jim Duey's "Monads made easy". Again, I didn't follow the talk very well and am afraid that I don't know any more about monads or why they are important in functional programming than I did at the beginning. I guess I'll cross that bridge when/if I come to it.
+
+The day wrapped up with a delightful and insightful talk by Gerald Jay Sussman titled "We Really Don't Know How to Compute". Dr. Sussman gave us a lot to think about when it comes to how we are writing our programs. The essence of the talk that I got was that our systems today aren't design/programmed to cope with future changes easily. Instead we should be thinking about how to give our programs the ability to dynamically change the computations at runtime. He presented an idea called The Propagator which is a bunch of independent stateless machines connecting stateful cells. Where expressions have anonymous connections between different expressions, propagators have all explicit connections (they are named). All operators are extensible generics and cells merge information monotonically. This talk is going to have to settle in and bounce around in my head for a while. Dr. Sussman is a treasure to the field of computer science and made me very jealous of all of his PhD students. I hope they realize how good they have it.
+
+If you're still with me after this long post, the last thing I want to say is how well run this conference is. It has been fabulous! I'll have more to say about that tomorrow. I can't wait until tomorrow for more distributed systems, CouchDB and Rich Hickey's keynote.
+
+
+
+
+
