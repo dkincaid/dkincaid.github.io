@@ -1,0 +1,13 @@
+#+STARTUP: showall indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil, num:nil
+#+BEGIN_HTML
+---
+layout: post
+title: First post.
+excerpt: My first blog post in Jekyll.
+---
+#+END_HTML
+
+* First blog post
+Veni vedi vici
