@@ -9,5 +9,16 @@ excerpt: My first blog post in Jekyll.
 ---
 #+END_HTML
 
-* First blog post
+** Here is a nice quote
 Veni vedi vici
+
+** Here is some code
+#+BEGIN_SRC clojure
+(+ 1 2)
+#+END_SRC
+
+#+BEGIN_SRC java
+public static void main(String[] args) {
+  System.println("I don't do anything");
+}
+#+END_SRC
