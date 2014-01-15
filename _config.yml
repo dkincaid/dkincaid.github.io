@@ -1,11 +1,15 @@
-# This is the default format. 
-# For more see: http://jekyllrb.com/docs/permalinks/
-#permalink: /:categories/:year/:month/:day/:title 
 permalink: pretty
 permalink: date
 markdown: redcarpet
 
-exclude: [".rvmrc", ".rbenv-version", "README.md", "Rakefile", "changelog.md" ,"org"]
+exclude: 
+- .rvmrc 
+- .rbenv-version
+- README.md
+- Rakefile
+- changelog.md
+- org
+
 pygments: true
 
 # Themes are encouraged to use these universal variables 
