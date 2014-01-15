@@ -1,0 +1,45 @@
+#+STARTUP: showall indent
+#+OPTIONS: toc:nil num:nil
+#+BEGIN_HTML
+---
+layout: post
+title: Introduction to Web Application Series
+tagline: Exploring web app development tools
+excerpt: An introduction to the series of articles on developing a data exploration web app
+categories: r clojure d3
+---
+#+END_HTML
+
+I've been thinking about how to build web applications that allow someone to do some data
+exploration interactively with some really nice visualizations. There are all kinds of choices such
+as [[http://rstudio.com/shiny][Shiny]] for R and generic tools like [[http://angularjs.org][AngularJS]], [[http://d3js.org][D3.js]], etc for general use. Of course there are
+also tools such as Tableau that provide their own interface. I'll probably try out [[http://www.tableausoftware.com/public/][Tableau]] public as
+well.
+
+Those of you that know me are well aware that I don't build web front ends, so all of this is pretty
+foreign to me. So in an attempt to learn about the possibilities and get a chance to play with two
+of my favorite tools, R and Clojure, I'm going to try to build a web app.
+
+Right now my plan is to try using the following tools in different ways:
+- [[http://rstudio.com/shiny][R with Shiny]]
+- Clojure
+- [[http://angularjs.org][AngularJS]]
+- [[http://d3js.org][D3.js]]
+- [[http://keminglabs.com/c2/][C2]]
+- [[http://www.tableausoftware.com/public/][Tableau public]]
+
+As you can see I don't really know what I don't know at this point. The one I'm most familiar with
+is R/Shiny so that's what I'll be starting with.
+
+* Data
+I'm going to use the data from [[http://www.tycho.pitt.edu/index.php][Project Tycho]] at University of Pittsburgh. I'll be using the [[http://www.tycho.pitt.edu/data/level2.php][Level 2]]
+data. The data consists of counts of 47 contagious diseases at the city and state level for the period
+1888-2013. This seems like an interesting data set that shouldn't be too difficult to work with.
+
+I'll use the first implementation in Shiny to explore what kind of visualizations and interactivity
+makes sense for this dataset. After that I'll attempt to implement the same thing using Clojure and
+some standard web app tools. From there I'll move on to things like d3.js and AngularJS.
+
+So, keep an eye out here over the next few weeks as I explore how to build interactive web apps for
+data exploration and visualization. If you'd like to follow along with the code I'll be posting it
+up to my Github repository [[http://github.com/dkincaid/web-app-explore][web-app-explore]].
