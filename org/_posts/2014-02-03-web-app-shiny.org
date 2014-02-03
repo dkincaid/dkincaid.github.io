@@ -19,7 +19,7 @@ so. It describes the data set and shows some of the types of things we want
 to be able to do.
 
 If you want to try the code out yourself you'll need to make sure you have the =shiny= package
-installed in R. To save space I won't put all of the code in the post, but will link to Gists that
+installed in R. To save space I won't necessarily put all of the code in the posts, but will link to Gists that
 you can download at interesting points as we build the app.
 
 * The basics
@@ -39,7 +39,6 @@ shinyUI(pageWithSidebar(
     headerPanel("Tycho Data Exploration"),
     sidebarPanel(
         htmlOutput("diseaseSelect")
-
         ),
 
     mainPanel(
@@ -47,7 +46,6 @@ shinyUI(pageWithSidebar(
         )
     )
 )
-
 #+end_src
 
 So what does this do? It starts by putting everything for the UI into the =shinyUI()= function
@@ -82,9 +80,8 @@ shinyServer(function(input, output) {
     output$textDisplay <- renderText({
         paste0("You selected ", input$disease)
     })
-}
+  }
 )
-
 #+END_src
 
 There is a little bit more here since this is the part doing the real work. We first load up the
@@ -136,7 +133,6 @@ library (=library(shiny)=) then running =runGist("8775464")=. The Gist for this 
 [[https://gist.github.com/dkincaid/8775464][Gist 8775464]].
 
 Here is what it looks like:[[ img:shiny-app1.png]]
-
 
 * Making it a bit more interesting
 Ok, that really isn't a very interesting application, but at least we have the basics of Shiny under
