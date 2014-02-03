@@ -1,0 +1,188 @@
+---
+layout: post
+title: Data Exploration Web App - Part 2 - R/Shiny
+excerpt: Part 2 of a series looking at building a web app for data exploration. R and Shiny.
+categories: r
+---
+
+<p>
+Here we go. Our first attempt at building a web app to explore the <a href="http://www.tycho.pitt.edu/index.php">Project Tycho</a> data.  For this
+first go around we're going to see what it's like to build a web app using <a href="http://www.r-project.org">R</a> and <a href="http://rstudio.org/shiny">Shiny</a>. In this post
+we'll just get a start on things and get the general idea down by building a very simple UI. Then
+next post we'll expand the app into something that's a lot more interesting.
+</p>
+
+<p>
+If you haven't read <a href="explore-tycho-data.html">part 1</a> of the series, I would encourage you to do
+so. It describes the data set and shows some of the types of things we want
+to be able to do.
+</p>
+
+<p>
+If you want to try the code out yourself you'll need to make sure you have the <code>shiny</code> package
+installed in R. To save space I won't put all of the code in the post, but will link to Gists that
+you can download at interesting points as we build the app.
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">The basics</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+In order to create a Shiny app you have to create two files, <code>ui.R</code> and <code>server.R</code>.
+You can probably figure out what the purpose of each is. Let's start off by
+building just a very basic app that will allow the user to select a disease
+from a dropdown and we'll display a string containing the disease name that 
+was selected. Not very useful, but it will get us going.
+</p>
+
+<p>
+Let's start by putting together the user interface side of the app. We do this by creating a file
+called <code>ui.R</code> and putting our UI components into it. Here is the code for <code>ui.R</code>:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-r"><span style="color: #b5bd68;">library</span>(shiny)
+
+shinyUI(pageWithSidebar(
+    headerPanel(<span style="color: #b5bd68;">"Tycho Data Exploration"</span>),
+    sidebarPanel(
+        htmlOutput(<span style="color: #b5bd68;">"diseaseSelect"</span>)
+
+        ),
+
+    mainPanel(
+        textOutput(<span style="color: #b5bd68;">"textDisplay"</span>)
+        )
+    )
+)
+</pre>
+</div>
+
+<p>
+So what does this do? It starts by putting everything for the UI into the <code>shinyUI()</code> function
+call. Inside we wrap everything in a call to <code>pageWithSidebar()</code>. According to the Shiny docs this
+function is used to "Create a Shiny UI that contains a header with the application title, a sidebar
+for input controls, and a main area for output.". It takes three arguments: headerPanel,
+sidebarPanel and mainPanel. In this case I'm simply putting the text "Tycho Data Exploration" in the
+header panel.
+</p>
+
+<p>
+The sidebar panel is going to require a bit of a leap of faith until we look at the server
+code. This is creating a div in the page with some named HTML output from the server. When we get to look
+at the server code you will see how they are linked together. In the main panel I am doing something
+similar except specifying the the value from the server will be plain text instead of HTML.
+</p>
+
+<p>
+That's all we need for our UI for now. Let's look at the server code now. This is the code for <code>server.R</code>
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-r"><span style="color: #b5bd68;">library</span>(shiny)
+
+fileUrl <span style="color: #b5bd68;">&lt;-</span> url(<span style="color: #b5bd68;">"http://s3.amazonaws.com/data-excursions/states_cases.Rda"</span>)
+load(fileUrl)
+
+diseases <span style="color: #b5bd68;">&lt;-</span> unique(as.character(states_cases$disease))
+states <span style="color: #b5bd68;">&lt;-</span> unique(as.character(states_cases$state))
+
+shinyServer(<span style="color: #b294bb;">function</span>(input, output) {
+
+    output$diseaseSelect <span style="color: #b5bd68;">&lt;-</span> renderUI({
+        selectInput(<span style="color: #b5bd68;">"disease"</span>, <span style="color: #b5bd68;">"Disease"</span>, diseases)
+    })
+
+    output$textDisplay <span style="color: #b5bd68;">&lt;-</span> renderText({
+        paste0(<span style="color: #b5bd68;">"You selected "</span>, input$disease)
+    })
+}
+)
+</pre>
+</div>
+
+<p>
+There is a little bit more here since this is the part doing the real work. We first load up the
+data from the saved file (into a data frame named <code>states_cases</code>) then extract the list of diseases
+and states contained in the data frame.
+</p>
+
+<p>
+Next comes the code that's the Shiny server code itself. Basically we just pass it a function that
+takes two arguments (the input and the output). Then inside this server function we hook up UI
+elements to our dynamic code.
+</p>
+
+<p>
+Remember how we created elements in the UI named "diseaseSelect" and "textDisplay"? Well, here is
+how we hook the server side code to those UI elements. We set <code>output$diseaseSelect</code> to the value we
+want to go into the <code>diseaseSelect</code> element and <code>output$textDisplay</code> to whatever we want to go into
+the <code>textDisplay</code> element.
+</p>
+
+<p>
+First let's look at this chunk of code that is creating our drop down box of diseases:
+</p>
+<pre class="example">
+output$diseaseSelect &lt;- renderUI({
+    selectInput("disease", "Disease", diseases)
+})
+</pre>
+
+<p>
+For the <code>diseaseSelect</code> element (which is in the sidebar panel) we want a drop down box with all the diseases in it. We can create
+that by calling the Shiny <code>selectInput()</code> function. We pass the function an id, label and the list
+of choices. In this case we're giving it the id <code>disease</code>, label <code>Disease</code> and the list of choices
+will come from the <code>diseases</code> list that we created from the unique diseases in our data frame.
+</p>
+
+<p>
+Now the chunk of code that is putting output into the main panel:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-r">output$textDisplay <span style="color: #b5bd68;">&lt;-</span> renderText({
+    paste0(<span style="color: #b5bd68;">"You selected "</span>, input$disease)
+})
+</pre>
+</div>
+
+<p>
+For the <code>textDisplay</code> element (in the main panel) we're just going to print out some text that
+includes the name of the disease to see how we grab input from the UI and use it. So we're calling
+the <code>renderText</code> function and just passing it some text. This creates a "reactive" function that is
+"connected" to the <code>input$disease</code> value, so that whenever <code>input$disease</code> changes value it will
+update this function. We get the disease that the user selected
+from the <code>selectInput</code> drop down from <code>input$disease (remember =disease</code> was the id we gave to it).
+</p>
+
+<p>
+<i>For more about what reactivity is see the <a href="http://rstudio.github.io/shiny/tutorial/#reactivity-overview">reactivity</a> section of the <a href="http://rstudio.github.io/shiny/tutorial">Shiny tutorial</a>.</i>
+</p>
+
+<p>
+So this is pretty simple. The UI is basically a drop down box with a list of diseases. When you
+choose a disease from the drop down the text in the main panel changes to include the name of the
+selected disease. Not very exciting, but it demonstrates the basics and gives you a chance to make
+sure you have everything setup right. You can run this app yourself from R by loading the Shiny
+library (<code>library(shiny)</code>) then running <code>runGist("8775464")</code>. The Gist for this part is at
+<a href="https://gist.github.com/dkincaid/8775464">Gist 8775464</a>.
+</p>
+
+<p>
+Here is what it looks like:<img src="/images/shiny-app1.png" alt="nil"/>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Making it a bit more interesting</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Ok, that really isn't a very interesting application, but at least we have the basics of Shiny under
+out belt. Next post I'll start enhancing the app with some more interesting elements.
+</p>
+</div>
+</div>
