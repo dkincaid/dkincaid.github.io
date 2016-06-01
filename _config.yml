@@ -1,6 +1,5 @@
 permalink: pretty
 permalink: date
-markdown: redcarpet
 
 exclude: 
 - .rvmrc 
