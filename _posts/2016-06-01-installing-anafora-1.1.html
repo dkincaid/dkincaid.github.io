@@ -1,0 +1,270 @@
+---
+layout: post
+title: Installing Anafora Text Annotation Tool on Ubuntu Linux
+excerpt: How to install the Anafora Text Annotation Tool on Ubuntu Linux
+categories: nlp
+---
+
+<p>
+There have been some breaking changes in Anafora 1.1, so I'm updating this in the event you are
+installing version 1.1.
+</p>
+
+<p>
+As part of a project I'm currently working on we've been looking for a centralized text annotation
+tool that we can use. After looking at several (eHost, Brat, Semantator, Knowtator all had something
+that didn't meet our requirements) we found <a href="https://github.com/weitechen/anafora">Anafora</a>. It's pretty raw in some respects, but we were
+able to get it working and it seems to meet most of our requirements for now. 
+</p>
+
+<p>
+Since we spent a couple days working through issues I thought I'd write up a guide for how to
+install the tool on an Ubuntu Linux box. That has been tested on an Ubuntu Linux 14.04 EC2 instance
+running on Amazon Web Services utilizing Anafora version 1.0.0. We're utilizing the Apache web
+server.
+</p>
+
+<p>
+Anafora is a Python Django web app, so it requires Python, Django and the Apache WSGI module be
+installed to run. The <a href="https://github.com/weitechen/anafora/wiki/Install-Guide">wiki document</a> from the project was very helpful in getting this going.
+</p>
+
+<div id="outline-container-orgheadline1" class="outline-2">
+<h2 id="orgheadline1">Install Anafora</h2>
+<div class="outline-text-2" id="text-orgheadline1">
+<p>
+Create a user and install the Anafora software in the new user's home directory using the following
+sequence of commands. You will need to be logged in as a user with <code>sudo</code> permissions.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">sudo useradd -m -d /home/anafora anafora
+sudo passwd anafora
+sudo groupadd anaforaadmin
+su - anafora
+wget https://github.com/weitechen/anafora/archive/v1.1.tar.gz
+<span style="color: #b0c4de;">cd</span> /home/anafora
+tar xvfz anafora-1.1.tar.gz
+<span style="color: #b294bb;">exit</span>
+sudo chgrp -R www-data /home/anafora/anafora-1.0.0
+sudo chmod -R g+rw /home/anafora/anafora-1.0.0
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline3" class="outline-2">
+<h2 id="orgheadline3">Install Required Dependencies</h2>
+<div class="outline-text-2" id="text-orgheadline3">
+</div><div id="outline-container-orgheadline2" class="outline-3">
+<h3 id="orgheadline2">Install Apache Server, Django, <code>mod_wsgi</code></h3>
+<div class="outline-text-3" id="text-orgheadline2">
+<div class="org-src-container">
+
+<pre class="src src-bash">sudo apt-get install apache2 apache2-utils python-django libapache2-mod-wsgi
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline7" class="outline-2">
+<h2 id="orgheadline7">Apache Server Configuration</h2>
+<div class="outline-text-2" id="text-orgheadline7">
+</div><div id="outline-container-orgheadline4" class="outline-3">
+<h3 id="orgheadline4">Setup <code>mod_auth_digest</code> and create <code>auth_user</code> file with initial user anafora</h3>
+<div class="outline-text-3" id="text-orgheadline4">
+<div class="org-src-container">
+
+<pre class="src src-bash">sudo ln -sf /etc/apache2/mods-available/auth_digest.load /etc/apache2/mods-enabled/auth-digest.load
+su - anafora
+htdigest -c /home/anafora/anafora-1.0.0/anafora.htdigest anafora anafora
+<span style="color: #b0c4de;">echo</span> <span style="color: #b5bd68;">"annotatorGroup: anafora"</span> &gt; /home/anafora/anafora-1.0.0/anafora.authgroup
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline5" class="outline-3">
+<h3 id="orgheadline5">Setup /anafora location</h3>
+<div class="outline-text-3" id="text-orgheadline5">
+<p>
+Insert the following block inside the <code>&lt;VirtualHost *:80&gt;&lt;/VirtualHost&gt;</code> tags in the
+<code>/etc/apache2/sites-available/000-default.conf</code> file
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-xml">&lt;<span style="color: #81a2be;">Location</span> /anafora&gt;
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+&lt;/<span style="color: #81a2be;">Location</span>&gt;
+&lt;<span style="color: #81a2be;">Location</span> /anaforajs&gt;
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+&lt;/<span style="color: #81a2be;">Location</span>&gt;
+&lt;<span style="color: #81a2be;">Location</span> /anaforacss&gt;
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+&lt;/<span style="color: #81a2be;">Location</span>&gt;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline6" class="outline-3">
+<h3 id="orgheadline6">Alias the static files and enable wsgi</h3>
+<div class="outline-text-3" id="text-orgheadline6">
+<p>
+In the <code>/etc/apache2/mods-available/alias.conf</code> file put the following inside the <code>&lt;IfModule alias_module&gt;&lt;/IfModule&gt;</code> tags.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-xml">Alias /anafora/static /home/anafora/anafora-1.1/src/main/static
+Alias /anaforajs /home/anafora/anafora-1.1/src/main/static/js
+Alias /anaforacss /home/anafora/anafora-1.1/src/main/static/css
+</pre>
+</div>
+
+<p>
+At the end of the <code>/etc/apache2/apache2.conf</code> file put the following
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-xml">WSGIScriptAlias /anafora /home/anafora/anafora-1.1/src/main/web/wsgi.py
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline11" class="outline-2">
+<h2 id="orgheadline11">Anafora Configuration</h2>
+<div class="outline-text-2" id="text-orgheadline11">
+</div><div id="outline-container-orgheadline8" class="outline-3">
+<h3 id="orgheadline8">Setup wsgi.py file</h3>
+<div class="outline-text-3" id="text-orgheadline8">
+<p>
+Edit the <code>/home/anafora/anafora-1.1/src/main/web/wsgi.py</code> file. Replace all of the content with one
+of the following depending on your version of Python:
+</p>
+
+<p>
+Python 2.6:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b294bb;">import</span> os, sys
+
+<span style="color: #b294bb;">if</span> <span style="color: #b5bd68;">'/home/anafora/anafora-1.0.0/src/main'</span> <span style="color: #b294bb;">not</span> <span style="color: #b294bb;">in</span> sys.path:
+        sys.path.append(<span style="color: #b5bd68;">'/home/anafora/anafora-1.0.0/src/main'</span>)
+
+<span style="color: #cc6666;">os.environ</span>[<span style="color: #b5bd68;">'DJANGO_SETTINGS_MODULE'</span>] = <span style="color: #b5bd68;">'settings'</span>
+
+<span style="color: #b294bb;">import</span> django.core.handlers.wsgi
+<span style="color: #cc6666;">application</span> = django.core.handlers.wsgi.WSGIHandler()
+</pre>
+</div>
+
+<p>
+Python 2.7:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #b294bb;">import</span> os, sys
+
+<span style="color: #b294bb;">if</span> <span style="color: #b5bd68;">'/home/anafora/anafora-1.0.0/src/main'</span> <span style="color: #b294bb;">not</span> <span style="color: #b294bb;">in</span> sys.path:
+        sys.path.append(<span style="color: #b5bd68;">'/home/anafora/anafora-1.0.0/src/main'</span>)
+
+<span style="color: #cc6666;">os.environ</span>[<span style="color: #b5bd68;">'DJANGO_SETTINGS_MODULE'</span>] = <span style="color: #b5bd68;">'settings'</span>
+
+<span style="color: #b294bb;">from</span> django.core.wsgi <span style="color: #b294bb;">import</span> get_wsgi_application
+<span style="color: #cc6666;">application</span> = get_wsgi_application()
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline9" class="outline-3">
+<h3 id="orgheadline9">Configure the settings.py file</h3>
+<div class="outline-text-3" id="text-orgheadline9">
+<p>
+First we have to get the <code>settings.py</code> file in the right place
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">mv /home/anafora/anafora-1.1/src/main/web/settings.py /home/anafora/anafora-1.1/src/main
+</pre>
+</div>
+
+<p>
+Now go into the <code>settings.py</code> file and set the following variables to the given value
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #cc6666;">TIME_ZONE</span> = <span style="color: #b5bd68;">'America/Chicago'</span>
+<span style="color: #cc6666;">STATIC_ROOT</span> = <span style="color: #b5bd68;">'/home/anafora/anafora-1.1/src/main/static'</span>
+<span style="color: #cc6666;">STATIC_URL</span> = <span style="color: #b5bd68;">'/static/'</span>
+<span style="color: #cc6666;">ROOT_URL</span> = <span style="color: #b5bd68;">'/anafora'</span>
+<span style="color: #cc6666;">SECRET_KEY</span> = <span style="color: #b5bd68;">'changeme'</span>
+<span style="color: #cc6666;">TEMPLATE_DIRS</span> = (<span style="color: #b5bd68;">"/home/anafora/anafora-1.0.0/src/Templates"</span>,)
+<span style="color: #cc6666;">ANAFORA_PROJECT_FILE_ROOT</span> = <span style="color: #b5bd68;">"/home/anafora/anafora-project-root"</span>
+<span style="color: #cc6666;">GROUP_FILE</span> = <span style="color: #b5bd68;">'/home/anafora/anafora-1.1/anafora.authgroup'</span>
+<span style="color: #cc6666;">ADMIN_GROUPNAME</span> = <span style="color: #b5bd68;">'anaforaadmin'</span>
+<span style="color: #cc6666;">ANAFORA_PROJECT_SETTING_FILENAME</span> = <span style="color: #b5bd68;">".setting.xml"</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline10" class="outline-3">
+<h3 id="orgheadline10">Copy the theme files</h3>
+<div class="outline-text-3" id="text-orgheadline10">
+<p>
+There is some problem with some of the references to static files in the pages, so we need to copy
+the <code>themes</code> directory
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">cp -av /home/anafora/anafora-1.1/src/main/static/css/themes /home/anafora/anafora-1.1/src/main/static
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgheadline12" class="outline-2">
+<h2 id="orgheadline12">Starting up</h2>
+<div class="outline-text-2" id="text-orgheadline12">
+<p>
+That's it! Your installation is ready to go. You will have to create a project in the
+<code>/home/anafora/anafora-project-root</code> directory. Follow the excellent <a href="https://github.com/weitechen/anafora/blob/master/documentation/AnaforaManual.pdf?raw=true">Anafora User/Administrator
+Manual</a> to setup a project.
+</p>
+
+<p>
+Once you have your project setup you can run <code>apache start</code> or <code>apache restart</code> as appropriate and
+go to <a href="http://myanaphora/anafora">http://myanaphora/anafora</a> to get started.
+</p>
+
+<p>
+I'll do a quick write up of a few operational things (like creating new users, formatting an Anafora
+corpus, etc) in a follow up post soon.
+</p>
+</div>
+</div>

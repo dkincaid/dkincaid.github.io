@@ -1,0 +1,173 @@
+#+STARTUP: showall indent
+#+OPTIONS: toc:nil num:nil
+#+BEGIN_HTML
+---
+layout: post
+title: Installing Anafora Text Annotation Tool on Ubuntu Linux
+excerpt: How to install the Anafora Text Annotation Tool on Ubuntu Linux
+categories: nlp
+---
+#+END_HTML
+
+There have been some breaking changes in Anafora 1.1, so I'm updating this in the event you are
+installing version 1.1.
+
+As part of a project I'm currently working on we've been looking for a centralized text annotation
+tool that we can use. After looking at several (eHost, Brat, Semantator, Knowtator all had something
+that didn't meet our requirements) we found [[https://github.com/weitechen/anafora][Anafora]]. It's pretty raw in some respects, but we were
+able to get it working and it seems to meet most of our requirements for now. 
+
+Since we spent a couple days working through issues I thought I'd write up a guide for how to
+install the tool on an Ubuntu Linux box. That has been tested on an Ubuntu Linux 14.04 EC2 instance
+running on Amazon Web Services utilizing Anafora version 1.0.0. We're utilizing the Apache web
+server.
+
+Anafora is a Python Django web app, so it requires Python, Django and the Apache WSGI module be
+installed to run. The [[https://github.com/weitechen/anafora/wiki/Install-Guide][wiki document]] from the project was very helpful in getting this going.
+
+* Install Anafora
+Create a user and install the Anafora software in the new user's home directory using the following
+sequence of commands. You will need to be logged in as a user with =sudo= permissions.
+
+#+BEGIN_SRC bash
+sudo useradd -m -d /home/anafora anafora
+sudo passwd anafora
+sudo groupadd anaforaadmin
+su - anafora
+wget https://github.com/weitechen/anafora/archive/v1.1.tar.gz
+cd /home/anafora
+tar xvfz anafora-1.1.tar.gz
+exit
+sudo chgrp -R www-data /home/anafora/anafora-1.0.0
+sudo chmod -R g+rw /home/anafora/anafora-1.0.0
+#+END_SRC
+
+* Install Required Dependencies
+** Install Apache Server, Django, =mod_wsgi=
+#+BEGIN_SRC bash
+sudo apt-get install apache2 apache2-utils python-django libapache2-mod-wsgi
+#+END_SRC
+
+* Apache Server Configuration
+** Setup =mod_auth_digest= and create =auth_user= file with initial user anafora
+#+BEGIN_SRC bash
+sudo ln -sf /etc/apache2/mods-available/auth_digest.load /etc/apache2/mods-enabled/auth-digest.load
+su - anafora
+htdigest -c /home/anafora/anafora-1.0.0/anafora.htdigest anafora anafora
+echo "annotatorGroup: anafora" > /home/anafora/anafora-1.0.0/anafora.authgroup
+#+END_SRC
+
+** Setup /anafora location
+Insert the following block inside the =<VirtualHost *:80></VirtualHost>= tags in the
+=/etc/apache2/sites-available/000-default.conf= file
+
+#+BEGIN_SRC xml
+<Location /anafora>
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+</Location>
+<Location /anaforajs>
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+</Location>
+<Location /anaforacss>
+   AuthType Digest
+   AuthName "anafora"
+   AuthDigestProvider file
+   AuthUserFile /home/anafora/anafora-1.1/anafora.htdigest
+   Require valid-user
+</Location>
+#+END_SRC
+
+** Alias the static files and enable wsgi
+In the =/etc/apache2/mods-available/alias.conf= file put the following inside the =<IfModule alias_module></IfModule>= tags.
+
+#+BEGIN_SRC xml
+Alias /anafora/static /home/anafora/anafora-1.1/src/main/static
+Alias /anaforajs /home/anafora/anafora-1.1/src/main/static/js
+Alias /anaforacss /home/anafora/anafora-1.1/src/main/static/css
+#+END_SRC
+
+At the end of the =/etc/apache2/apache2.conf= file put the following
+
+#+BEGIN_SRC xml
+WSGIScriptAlias /anafora /home/anafora/anafora-1.1/src/main/web/wsgi.py
+#+END_SRC
+
+* Anafora Configuration
+** Setup wsgi.py file
+Edit the =/home/anafora/anafora-1.1/src/main/web/wsgi.py= file. Replace all of the content with one
+of the following depending on your version of Python:
+
+Python 2.6:
+#+BEGIN_SRC python
+import os, sys
+ 
+if '/home/anafora/anafora-1.0.0/src/main' not in sys.path:
+        sys.path.append('/home/anafora/anafora-1.0.0/src/main')
+ 
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+ 
+import django.core.handlers.wsgi
+application = django.core.handlers.wsgi.WSGIHandler()
+#+END_SRC
+
+Python 2.7:
+#+BEGIN_SRC python
+import os, sys
+ 
+if '/home/anafora/anafora-1.0.0/src/main' not in sys.path:
+        sys.path.append('/home/anafora/anafora-1.0.0/src/main')
+ 
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+#+END_SRC
+
+** Configure the settings.py file
+First we have to get the =settings.py= file in the right place
+
+#+BEGIN_SRC bash
+mv /home/anafora/anafora-1.1/src/main/web/settings.py /home/anafora/anafora-1.1/src/main
+#+END_SRC
+
+Now go into the =settings.py= file and set the following variables to the given value
+
+#+BEGIN_SRC python
+TIME_ZONE = 'America/Chicago'
+STATIC_ROOT = '/home/anafora/anafora-1.1/src/main/static'
+STATIC_URL = '/static/'
+ROOT_URL = '/anafora'
+SECRET_KEY = 'changeme'
+TEMPLATE_DIRS = ("/home/anafora/anafora-1.0.0/src/Templates",)
+ANAFORA_PROJECT_FILE_ROOT = "/home/anafora/anafora-project-root"
+GROUP_FILE = '/home/anafora/anafora-1.1/anafora.authgroup'
+ADMIN_GROUPNAME = 'anaforaadmin'
+ANAFORA_PROJECT_SETTING_FILENAME = ".setting.xml"
+#+END_SRC
+
+** Copy the theme files
+There is some problem with some of the references to static files in the pages, so we need to copy
+the =themes= directory
+
+#+BEGIN_SRC bash
+cp -av /home/anafora/anafora-1.1/src/main/static/css/themes /home/anafora/anafora-1.1/src/main/static
+#+END_SRC
+
+* Starting up
+That's it! Your installation is ready to go. You will have to create a project in the
+=/home/anafora/anafora-project-root= directory. Follow the excellent [[https://github.com/weitechen/anafora/blob/master/documentation/AnaforaManual.pdf?raw%3Dtrue][Anafora User/Administrator
+Manual]] to setup a project.
+
+Once you have your project setup you can run =apache start= or =apache restart= as appropriate and
+go to http://myanaphora/anafora to get started.
+
+I'll do a quick write up of a few operational things (like creating new users, formatting an Anafora
+corpus, etc) in a follow up post soon.
